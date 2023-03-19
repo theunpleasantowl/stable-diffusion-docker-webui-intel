@@ -32,9 +32,9 @@ RUN useradd -m "$DOCKER_USER"
 RUN \
   git clone --branch oneapi https://github.com/jbaboval/stable-diffusion-webui.git 
 WORKDIR stable-diffusion-webui
-# Change torch/pytorch version to be downloaded (uncomment to download IDP version instead)
+
+# Change torch/pytorch version to be downloaded 
 RUN sed -i 's#pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 --extra-index-url https://download.pytorch.org/whl/cu117#pip install pillow mkl torch==1.13.0a0 torchvision==0.14.1a0 intel_extension_for_pytorch==1.13.10+xpu -f https://developer.intel.com/ipex-whl-stable-xpu#g' launch.py
-#RUN sed -i 's#ipex-whl-stable-xpu#ipex-whl-stable-xpu-idp#g' launch.py
 
 # Run Once to Cache Torch Dependencies
 SHELL ["/bin/bash", "-c"] 
