@@ -22,7 +22,8 @@ RUN \
     level-zero \
     libgl-dev \
     libglib2.0-0 \
-    libmfx1
+    libmfx1 \
+    python3-pip
 
 # Create User Permissions
 ARG DOCKER_USER=default_user
@@ -32,24 +33,23 @@ RUN useradd -m "$DOCKER_USER"
 RUN \
   git clone --branch oneapi https://github.com/jbaboval/stable-diffusion-webui.git 
 WORKDIR stable-diffusion-webui
+# Change torch/pytorch version to be downloaded (uncomment to download IDP version instead)
+RUN sed -i 's#pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 --extra-index-url https://download.pytorch.org/whl/cu117#pip install --ignore-installed pillow mkl torch==1.13.0a0 torchvision==0.14.1a0 intel_extension_for_pytorch==1.13.10+xpu -f https://developer.intel.com/ipex-whl-stable-xpu-idp#g' launch.py
+
+# Run Once to Cache Torch Dependencies
+SHELL ["/bin/bash", "-c"] 
+RUN \
+  update-alternatives --install /usr/bin/python3 python3 /opt/intel/oneapi/intelpython/python3.9/bin/python3.9 1 \
+  && source /opt/intel/oneapi/setvars.sh \
+  && python3 launch.py --nowebui --skip-torch-cuda-test --exit
 
 # Allow Config to Persist
 RUN mkdir config \
   && touch config/config.json \
   && ln -s config/config.json config.json
 
-# Switch User (UID/GUID)
+# Start Container
 RUN chown -R $DOCKER_USER:$DOCKER_USER /stable-diffusion-webui
 USER $DOCKER_USER
-
-# Set Torch/pytorch version to be downloaded
-ENV TORCH_COMMAND="pip install --ignore-installed pillow mkl torch==1.13.1 torchvision==0.14.1 intel_extension_for_pytorch==1.13.100 -f https://developer.intel.com/ipex-whl-stable-xpu-idg"
-# Run Once to Cache Torch Dependencies
-SHELL ["/bin/bash", "-c"] 
-RUN \
-  source /opt/intel/oneapi/setvars.sh \
-  && /opt/intel/oneapi/intelpython/python3.9/bin/python3 launch.py --nowebui --skip-torch-cuda-test --exit
-
-# Start Container
 COPY start.sh /usr/local/bin
 CMD ["start.sh"]
